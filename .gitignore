@@ -1,0 +1,6 @@
+.idea/*
+.DS_Store
+*.pyc
+data/fasttext/*
+dbpedia_data/*
+result/fasttext/*
