@@ -2,5 +2,6 @@
 .DS_Store
 *.pyc
 data/fasttext/*
+data/tensorflow/*
 dbpedia_data/*
 result/fasttext/*
