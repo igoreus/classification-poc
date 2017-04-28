@@ -11,15 +11,18 @@ from sklearn import metrics
 import tensorflow as tf
 from tensorflow.contrib.layers.python.layers import encoders
 from tensorflow.contrib.session_bundle import exporter
+import time
 
 learn = tf.contrib.learn
 
 FLAGS = None
 
+LOG_PATH = 'data/tensorflow/log.log'
 FILE_PATH = 'data/tensorflow/data.csv'
 FILE_PATH_TEST = 'data/tensorflow/data_test.csv'
 MODEL_PATH = 'data/tensorflow/model'
 
+MAX_STEPS = 1000
 MAX_DOCUMENT_LENGTH = 10
 EMBEDDING_SIZE = 50
 n_words = 0
@@ -88,8 +91,8 @@ def rnn_model(features, target):
 
 def load_dataset():
     if not os.path.isfile(FILE_PATH) or not os.path.isfile(FILE_PATH_TEST):
-        util.create_train_csv(FILE_PATH)
-        util.create_test_csv(FILE_PATH_TEST)
+        util.create_train_csv(FILE_PATH, target='category')
+        util.create_test_csv(FILE_PATH_TEST, target='category')
 
     train_path = FILE_PATH
     test_path = FILE_PATH_TEST
@@ -105,7 +108,9 @@ def load_dataset():
 def main(unused_argv):
     global n_words
     # Prepare training and testing data
+    start = time.time()
     dataset = load_dataset()
+    tf.logging.set_verbosity(tf.logging.INFO)
 
     x_train = pandas.DataFrame(dataset.train.data)[0]
     y_train = pandas.Series(dataset.train.target)
@@ -122,7 +127,8 @@ def main(unused_argv):
     x_test = np.array(list(x_transform_test))
 
     n_words = len(vocab_processor.vocabulary_)
-    print('Total words: %d' % n_words)
+
+    load_dataset_time = time.time() - start
 
     # Build model
     # Switch between rnn_model and bag_of_words_model to test different models.
@@ -131,17 +137,27 @@ def main(unused_argv):
     else:
         model_fn = bag_of_words_model
 
+    # Train
+    start = time.time()
+    classifier = learn.Estimator(model_fn=model_fn, model_dir=MODEL_PATH)
+    classifier.fit(x_train, y_train, max_steps=MAX_STEPS)
+    classifier.evaluate(x_train, y_train, steps=1)
+    train_time = time.time() - start
 
-    # Train and predict
-    classifier = learn.Estimator(model_fn=model_fn)
-    classifier.fit(x_train, y_train, steps=100)
-    # classifier = learn.Estimator(model_dir=MODEL_PATH)
-
+    # predict
+    start = time.time()
     y_predicted = [
         p['class'] for p in classifier.predict(
             x_test, as_iterable=True)
         ]
+    predict_time = time.time() - start
     score = metrics.accuracy_score(y_test, y_predicted)
+
+    print("Load Dataset time: %.3f sec" % load_dataset_time)
+    print("Train time: %.3f sec" % train_time)
+    print("Predict time: %.3f sec" % predict_time)
+
+    print('Total words: %d' % n_words)
     print('Accuracy: {0:f}'.format(score))
 
 if __name__ == '__main__':
