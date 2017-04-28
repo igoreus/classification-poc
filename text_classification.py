@@ -25,7 +25,7 @@ EMBEDDING_SIZE = 50
 n_words = 0
 
 # bag_of_words_model OR rnn_model
-ALGO = 'bag_of_words_model'
+ALGO = 'rnn_model'
 
 
 def bag_of_words_model(features, target):

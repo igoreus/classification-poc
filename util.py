@@ -2,10 +2,15 @@ from HTMLParser import HTMLParser
 import MySQLdb
 import pandas
 import numpy as np
+from nltk.corpus import stopwords
+from nltk.tokenize import RegexpTokenizer
+from nltk.stem import *
 
 DB = "iconic"
 USER = "root"
 PASSWD = ""
+
+cachedStopWords = stopwords.words("english")
 
 class MLStripper(HTMLParser):
     def __init__(self):
@@ -31,9 +36,19 @@ def getDb():
 
 def normalize(data):
     data = '' if data is None else data
-    data = data.replace('\n', ' ').replace('\r', '') if isinstance(data, basestring) else data
-    data = strip_tags(data).encode('utf-8') if isinstance(data, basestring) else data
-    return data
+    if isinstance(data, basestring):
+        data = data.replace('\n', ' ').replace('\r', '')
+        data = strip_tags(data)
+
+        tokenizer = RegexpTokenizer(r'\w+')
+        stemmers = (PorterStemmer(), SnowballStemmer("english"))
+
+        data = ' '.join(tokenizer.tokenize(data))
+        data = ' '.join([word for word in data.split() if word not in cachedStopWords])
+        for stemmer in stemmers:
+            data = ' '.join([stemmer.stem(word) for word in data.split()])
+
+    return data.encode('utf-8')
 
 
 def create_train_csv(file_path, target=None):
@@ -41,7 +56,7 @@ def create_train_csv(file_path, target=None):
 
 
 def create_test_csv(file_path, target=None):
-    _create_csv(file_path, limit=1000, offset=10000, target=target)
+    _create_csv(file_path, limit=100, offset=10000, target=target)
 
 
 def _create_csv(file_path, **kwargs):
@@ -60,9 +75,14 @@ def _create_csv(file_path, **kwargs):
             % (target_sql, kwargs.get('order_by', 'RAND()'), kwargs.get('limit', 1000), kwargs.get('offset', 0))
 
     c = getDb()
+
     result_list_df = pandas.read_sql(query, c)
     result_list_df = result_list_df.dropna(how='any')
+    result_list_df['description'] = result_list_df['description'].map(lambda x: normalize(x))
+    result_list_df['brand'] = result_list_df['brand'].map(lambda x: normalize(x))
+    result_list_df['title'] = result_list_df['title'].map(lambda x: normalize(x))
     result_list_df['text'] = result_list_df.apply(
-        lambda r: normalize(r['brand']) + ' ' + normalize(r['title']) + ' ' + normalize(r['description']), axis=1)
+        lambda r: r['brand'] + ' ' + r['title'] + ' ' + r['description'], axis=1)
+
     result_list_df.drop(['title', 'brand', 'description'], axis=1, inplace=True)
     result_list_df.to_csv(file_path, index=None, header=None, float_format='%d')
