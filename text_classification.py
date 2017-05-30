@@ -22,13 +22,13 @@ FILE_PATH = 'data/tensorflow/data.csv'
 FILE_PATH_TEST = 'data/tensorflow/data_test.csv'
 MODEL_PATH = 'data/tensorflow/model'
 
-MAX_STEPS = 1000
+MAX_STEPS = 5000
 MAX_DOCUMENT_LENGTH = 10
 EMBEDDING_SIZE = 50
 n_words = 0
 
 # bag_of_words_model OR rnn_model
-ALGO = 'rnn_model'
+ALGO = 'bag_of_words_model'
 
 
 def bag_of_words_model(features, target):
@@ -91,8 +91,8 @@ def rnn_model(features, target):
 
 def load_dataset():
     if not os.path.isfile(FILE_PATH) or not os.path.isfile(FILE_PATH_TEST):
-        util.create_train_csv(FILE_PATH, target='category')
-        util.create_test_csv(FILE_PATH_TEST, target='category')
+        util.create_train_csv(FILE_PATH, limit=10000, target='category')
+        util.create_test_csv(FILE_PATH_TEST, limit=100, offset=10000, target='category')
 
     train_path = FILE_PATH
     test_path = FILE_PATH_TEST

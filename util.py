@@ -51,12 +51,16 @@ def normalize(data):
     return data.encode('utf-8')
 
 
-def create_train_csv(file_path, target=None):
-    _create_csv(file_path, limit=10000, target=target)
+def create_train_csv(file_path, **kwargs):
+    kwargs['limit'] = kwargs.get('limit', 100000)
+    kwargs['offset'] = kwargs.get('offset', 0)
+    _create_csv(file_path, **kwargs)
 
 
-def create_test_csv(file_path, target=None):
-    _create_csv(file_path, limit=100, offset=10000, target=target)
+def create_test_csv(file_path, **kwargs):
+    kwargs['limit'] = kwargs.get('limit', 1000)
+    kwargs['offset'] = kwargs.get('offset', 0)
+    _create_csv(file_path, **kwargs)
 
 
 def _create_csv(file_path, **kwargs):
@@ -67,13 +71,12 @@ def _create_csv(file_path, **kwargs):
     else:
         target_sql = 'p.fk_catalog_attribute_set'
 
-    query = "SELECT %s category, b.name brand, p.name title, pd.description description \
+    query = "SELECT %s category, b.name brand, p.name title, pd.description  description \
             FROM catalog_product p \
             JOIN catalog_product_data pd ON pd.fk_catalog_product_set = p.fk_catalog_product_set \
             JOIN catalog_brand b ON p.fk_catalog_brand = b.id_catalog_brand \
             WHERE p.status = 'active' group by p.fk_catalog_product_set ORDER BY %s limit %d offset %s;" \
             % (target_sql, kwargs.get('order_by', 'RAND()'), kwargs.get('limit', 1000), kwargs.get('offset', 0))
-
     c = getDb()
 
     result_list_df = pandas.read_sql(query, c)
