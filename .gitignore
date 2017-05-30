@@ -1,6 +1,7 @@
 .idea/*
 .DS_Store
 *.pyc
+data/scikit/*
 data/fasttext/*
 data/tensorflow/*
 dbpedia_data/*
