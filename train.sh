@@ -1,4 +1,4 @@
-train.sh#!/usr/bin/env bash
+#!/usr/bin/env bash
 
 myshuf() {
   perl -MList::Util=shuffle -e 'print shuffle(<>);' "$@";

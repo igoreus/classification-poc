@@ -64,10 +64,12 @@ def create_test_csv(file_path, **kwargs):
 
 
 def _create_csv(file_path, **kwargs):
-    if kwargs.get('target', '') == 'category':
+    if kwargs.get('target', '') == 'first_level_category':
         target_sql = '(SELECT t2.id_catalog_category FROM catalog_category t0 \
             LEFT JOIN catalog_category t2 ON t2.lft < t0.lft AND t2.rgt > t0.rgt \
             WHERE t0.id_catalog_category = p.primary_category AND t2.id_catalog_category != 1 ORDER BY t2.lft limit 1)'
+    elif kwargs.get('target', '') == 'category':
+        target_sql = 'p.primary_category'
     else:
         target_sql = 'p.fk_catalog_attribute_set'
 
